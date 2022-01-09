@@ -383,6 +383,104 @@ void funcReconstruct(const RSSVectorMyType &a, vector<myType> &b, size_t size, s
 	}
 }
 
+// reconstruc additive secret sharing between party 1 and party 2
+void funcASSReconstruct(const vector<myType> &a, vector<myType> &b, size_t size, string str, bool print)
+{
+	log_print("Reconst: ASSMyType, myType");
+	assert(a.size() == size && "a.size mismatch for reconstruct function");
+
+	if (SECURITY_TYPE.compare("Semi-honest") == 0)
+	{
+		// if (partyNum == PARTY_A or partyNum == PARTY_B)
+		// 	sendVector<myType>(a, PARTY_C, size);
+
+		if (partyNum == PARTY_C) {
+			return;
+		}
+		vector<myType> receive_buf(size);
+
+		thread *threads = new thread[2];
+
+		if (partyNum == PARTY_A) {
+			threads[0] = thread(sendVector<myType>, a, PARTY_B, size);
+			threads[1] = thread(receiveVector<myType>, ref(receive_buf), PARTY_B, size);
+		} else {
+			threads[0] = thread(sendVector<myType>, a, PARTY_A, size);
+			threads[1] = thread(receiveVector<myType>, ref(receive_buf), PARTY_A, size);			
+		}
+		for (int i = 0; i < 2; i++)
+			threads[i].join();
+		delete[] threads;
+		for (int i = 0; i < size; ++i){
+			b[i] = a[i] + receive_buf[i];
+			// std::cout << "my share: "<< (int)a[i] << " other share" << (int)receive_buf[i] << "result" << (int)b[i] << std::endl;
+		}
+
+	
+		if (print)
+		{
+			std::cout << str << ": \t\t";
+			for (int i = 0; i < size; ++i)
+				print_linear(b[i], "SIGNED");
+			std::cout << std::endl;
+		}
+	}
+
+	if (SECURITY_TYPE.compare("Malicious") == 0)
+	{
+		std::cout << "Malicious case is NOT supported for ASS"  <<  std::endl;
+	}
+}
+
+
+// reconstruc additive secret sharing between party 1 and party 2
+void funcASSReconstruct(const vector<smallType> &a, vector<smallType> &b, size_t size, string str, bool print)
+{
+	log_print("Reconst: ASSMyType, smallType");
+	assert(a.size() == size && "a.size mismatch for reconstruct function");
+
+	if (SECURITY_TYPE.compare("Semi-honest") == 0)
+	{
+		if (partyNum == PARTY_C) {
+			return;
+		}
+		vector<smallType> receive_buf(size);
+
+		thread *threads = new thread[2];
+
+		if (partyNum == PARTY_A) {
+			threads[0] = thread(sendVector<smallType>, a, PARTY_B, size);
+			threads[1] = thread(receiveVector<smallType>, ref(receive_buf), PARTY_B, size);
+		} else {
+			threads[0] = thread(sendVector<smallType>, a, PARTY_A, size);
+			threads[1] = thread(receiveVector<smallType>, ref(receive_buf), PARTY_A, size);			
+		}
+		for (int i = 0; i < 2; i++)
+			threads[i].join();
+		delete[] threads;
+		for (int i = 0; i < size; ++i)
+		{
+			b[i] = a[i];
+			b[i] = additionModPrime[b[i]][receive_buf[i]];
+			// std::cout << "my share: "<< (int)a[i] << " other share" << (int)receive_buf[i] << "result" << (int)b[i] << std::endl;
+		}
+
+		if (print)
+		{
+			std::cout << str << ": \t\t";
+			for (int i = 0; i < size; ++i)
+				print_linear(b[i], "SIGNED");
+			std::cout << std::endl;
+		}
+	}
+
+	if (SECURITY_TYPE.compare("Malicious") == 0)
+	{
+		std::cout << "Malicious case is NOT supported for ASS"  <<  std::endl;
+	}
+}
+
+
 void funcCheckMaliciousMatMul(const RSSVectorMyType &a, const RSSVectorMyType &b, const RSSVectorMyType &c, 
 							const vector<myType> &temp, size_t rows, size_t common_dim, size_t columns,
 							size_t transpose_a, size_t transpose_b)
@@ -1390,26 +1488,124 @@ void funcSelectBitShares(const RSSVectorSmallType &a0, const RSSVectorSmallType 
 		answer[i] = answer[i] ^ a0[i];
 }
 
+void LTZ(const RSSVectorMyType &a, RSSVectorSmallType &b, size_t size)
+{
+	const int k = 4, l = 8;
+	log_print("LTZ protocol using function table");
+	// P3 does not participate 
+	if (partyNum == PARTY_C) {
+		for (int i = 0; i < size; ++i)
+		{
+			b[i].first = PrecomputeObject.z_3;
+			b[i].second = PrecomputeObject.z_1;
+		}	
+		return;	
+	}
+	// if it is P1 or P2, reconstruct the additive secret sharing.
+	myType r = PrecomputeObject.r_raw;
+	vector<smallType> block_results(size * k), block_results_plain(size * k);
+	vector<myType> x_plus_r(size), x_plus_r_plain(size);
+
+	if (partyNum == PARTY_A) {
+		for (int i = 0; i < size; ++i) {
+			x_plus_r[i] = a[i].first + a[i].second + r;
+		}
+	} else {
+		for (int i = 0; i < size; ++i) {
+			x_plus_r[i] = a[i].second + r;
+		}
+	}
+	
+	funcASSReconstruct(x_plus_r, x_plus_r_plain, size, "First round", false);
+
+	// look up first block table and bit b table
+	vector<smallType> bit(size), bit_plain(size);
+
+
+	for (int i = 0; i < size; ++i)
+	{
+        myType first_piece = x_plus_r_plain[i] >> ((k - 1) * l);
+        // cout << "party" << partyNum << " x+r: " << x_plus_r_plain[i] << " first piece " <<  first_piece << endl;
+        bit[i] = (smallType)PrecomputeObject.bit_b_list[first_piece];
+        block_results[i * k] = (smallType)PrecomputeObject.block_1[first_piece];
+        myType lol = 33;
+	}	
+	funcASSReconstruct(bit, bit_plain, size, "Second round", false);
+
+    // look up tables to get all the block results
+    for(int num = 0; num < size; num++) {
+        for (int i = 1; i < k; i++) {
+            myType piece = (x_plus_r_plain[num] << (i * l)) >> ((k - 1) * l); 
+            //if b == 0
+            if (bit[num] == 0) {
+                block_results[num * k + i] = (smallType) PrecomputeObject.blocks_with_bit_0[i - 1][piece];
+            } else {
+                block_results[num * k + i] = (smallType) PrecomputeObject.blocks_with_bit_1[i - 1][piece];            
+            }
+        }
+    }
+    funcASSReconstruct(block_results, block_results_plain, size * k, "Third round", false);
+
+    vector<smallType> z_2(size), z_2_plain(size);
+    for (int num = 0; num < size; num++) {
+        string combination_entry = std::to_string(block_results_plain[num * k]);
+        for (int i = 1; i < k; i++) {       
+            combination_entry = combination_entry + std::to_string(block_results_plain[num * k + i]);
+        } 
+        z_2[num] = PrecomputeObject.combination_table[combination_entry];
+    }
+
+    // additional round to reconstruct z_2
+    funcASSReconstruct(z_2, z_2_plain, size, "Fourth round", false);
+
+	if (partyNum == PARTY_A) {
+		for (int i = 0; i < size; ++i) {
+			b[i].first = PrecomputeObject.z_1;
+			b[i].second = z_2_plain[i];
+		}
+	} else {
+		for (int i = 0; i < size; ++i) {
+			b[i].first = (smallType)z_2_plain[i];
+			b[i].second = (smallType)PrecomputeObject.z_3;
+		}
+	}
+
+}
+
 
 // b holds bits of ReLU' of a
 void funcRELUPrime(const RSSVectorMyType &a, RSSVectorSmallType &b, size_t size)
 {
 	log_print("funcRELUPrime");
-
-	RSSVectorMyType twoA(size);
-	RSSVectorSmallType theta(size);
-	for (int i = 0; i < size; ++i)
-		twoA[i] = a[i] << 1;
-
-	// cout << "Wrap: \t\t" << funcTime(funcWrap, twoA, theta, size) << endl;
-	funcWrap(twoA, theta, size);
+	// int test_size = 3;
+	// vector<myType> data = {1, 0, -1};
+	// RSSVectorMyType test(test_size);
+	// funcGetShares(test, data);
+	// LTZ(test, b, test_size);
 
 
-	for (int i = 0; i < size; ++i)
-	{
-		b[i].first = theta[i].first ^ (getMSB(a[i].first));
-		b[i].second = theta[i].second ^ (getMSB(a[i].second));
-	}
+	// vector<smallType> b_plain(test_size);
+	// funcReconstructBit(b, b_plain, test_size, "HA", false);
+	// for (int i = 0; i < test_size; i++) {
+	// 	cout << "LTZ result for value "<< data[i] << ":" << (int)b_plain[i] << endl;
+	// }
+
+	LTZ(a, b, size);
+
+	// RSSVectorMyType twoA(size);
+	// RSSVectorSmallType theta(size);
+	// for (int i = 0; i < size; ++i)
+	// 	twoA[i] = a[i] << 1;
+
+	// // cout << "Wrap: \t\t" << funcTime(funcWrap, twoA, theta, size) << endl;
+	// funcWrap(twoA, theta, size);
+
+
+	// for (int i = 0; i < size; ++i)
+	// {
+	// 	b[i].first = theta[i].first ^ (getMSB(a[i].first));
+	// 	b[i].second = theta[i].second ^ (getMSB(a[i].second));
+	// }
 }
 
 //Input is a, outputs are temp = ReLU'(a) and b = RELU(a).

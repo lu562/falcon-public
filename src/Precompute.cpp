@@ -2,9 +2,157 @@
 #pragma once
 #include "Precompute.h"
 
-Precompute::Precompute(){initialize();}
+/**
+ * helper function to read csv files
+ */
+
+std::vector<std::pair<std::string, std::vector<myType>>> read_csv(std::string filename){
+    // Reads a CSV file into a vector of <string, vector<int>> pairs where
+    // each pair represents <column name, column values>
+
+    // Create a vector of <string, int vector> pairs to store the result
+    std::vector<std::pair<std::string, std::vector<myType>>> result;
+
+    // Create an input filestream
+    std::ifstream myFile(filename);
+
+    // Make sure the file is open
+    if(!myFile.is_open()) throw std::runtime_error("Could not open file");
+
+    // Helper vars
+    std::string line, colname;
+    myType val;
+
+    // Read the column names
+    if(myFile.good())
+    {
+        // Extract the first line in the file
+        std::getline(myFile, line);
+
+        // Create a stringstream from line
+        std::stringstream ss(line);
+
+        // Extract each column name
+        while(std::getline(ss, colname, ',')){
+            
+            // Initialize and add <colname, int vector> pairs to result
+            result.push_back({colname, std::vector<myType> {}});
+        }
+    }
+
+    // Read data, line by line
+    while(std::getline(myFile, line))
+    {
+        // Create a stringstream of the current line
+        std::stringstream ss(line);
+        
+        // Keep track of the current column index
+        int colIdx = 0;
+        
+        // Extract each integer
+        while(ss >> val){
+            
+            // Add the current integer to the 'colIdx' column's values vector
+            result.at(colIdx).second.push_back(val);
+            
+            // If the next token is a comma, ignore it and move on
+            if(ss.peek() == ',') ss.ignore();
+            
+            // Increment the column index
+            colIdx++;
+        }
+    }
+
+    // Close file
+    myFile.close();
+
+    return result;
+}
+
+
+Precompute::Precompute():blocks_with_bit_0(k - 1), blocks_with_bit_1(k - 1)
+{
+    //initialize();
+}
 Precompute::~Precompute(){}
-void Precompute::initialize(){}
+void Precompute::initialize(){
+	// load function table
+    //offline phase
+    std::string block_1_file_name;
+    std::string tables_file_name;
+    std::string config_file_name;
+    std::string combination_file_name;
+
+    if (partyNum == PARTY_A) {
+        block_1_file_name = "block1_p1_001.csv";
+        tables_file_name = "tables_p1_001.csv";
+        config_file_name = "config_p1_001.csv";
+        combination_file_name = "rectable_p1_001.csv";
+
+    } else if (partyNum == PARTY_B) { 
+        block_1_file_name = "block1_p2_001.csv";
+        tables_file_name = "tables_p2_001.csv";
+        config_file_name = "config_p2_001.csv";
+        combination_file_name = "rectable_p2_001.csv";
+    } else {
+        config_file_name = "config_p3_001.csv";
+    }
+    if (partyNum == PARTY_C) {
+        // offline party only need to store the result pairs.
+        std::vector<std::pair<std::string, std::vector<myType>>> config_csv = read_csv(config_file_name);
+        for (std::pair<std::string, std::vector<myType>> i: config_csv) {
+            if (i.first.compare("z_1") == 0) {
+                z_1 = i.second[0];
+            } else if (i.first.compare("z_3") == 0) {
+                z_3 = i.second[0];
+            }
+        }
+        return;
+    }
+
+    // read config
+    std::vector<std::pair<std::string, std::vector<myType>>> config_csv = read_csv(config_file_name);
+    for (std::pair<std::string, std::vector<myType>> i: config_csv) {
+        if (i.first.compare("r") == 0) {
+            r_raw = i.second[0];
+        } else if (i.first.compare("z_1") == 0) {
+            z_1 = i.second[0];
+        } else if (i.first.compare("z_3") == 0) {
+            z_3 = i.second[0];
+        }
+    }
+
+    // read the first block
+    std::vector<std::pair<std::string, std::vector<myType>>> first_block_csv = read_csv(block_1_file_name);
+    int block_size = first_block_csv[0].second.size();
+    for (int i = 0; i < block_size; i++) {
+        block_1[first_block_csv[0].second[i]] = first_block_csv[2].second[i];
+        bit_b_list[first_block_csv[0].second[i]] = first_block_csv[1].second[i];
+    }
+    // read the following blocks
+
+    std::vector<std::pair<std::string, std::vector<myType>>> tables_csv = read_csv(tables_file_name);
+    int tables_size = tables_csv[0].second.size();
+    for (int i = 0; i < tables_size; i++) {
+        if (tables_csv[0].second[i] == 0) {
+            blocks_with_bit_0[tables_csv[1].second[i] - 1][tables_csv[2].second[i]] = tables_csv[3].second[i];
+        } else {
+            blocks_with_bit_1[tables_csv[1].second[i] - 1][tables_csv[2].second[i]] = tables_csv[3].second[i];
+        }
+    }
+
+    // read the combination table
+    std::vector<std::pair<std::string, std::vector<myType>>> combination_csv = read_csv(combination_file_name);
+    int table_size = combination_csv[0].second.size();
+    for (int i = 0; i < table_size; i++) {
+        std::string string_input = std::to_string(combination_csv[0].second[i]);
+        if (string_input.size() < k) {
+            std::string prefix_0(k - string_input.size(), '0');
+            string_input = prefix_0 + string_input;
+        }
+        combination_table[string_input] = combination_csv[1].second[i];
+    }
+}
 
 // Currently, r = 3 and rPrime = 3 * 2^d
 // TODO: ReLU produces a bug with this. Why? funcRELU does not even call getDividedShares()
@@ -109,4 +257,45 @@ void Precompute::getTriplets(RSSVectorSmallType &a, RSSVectorSmallType &b, RSSVe
 
 	for(auto &it : c)
 		it = std::make_pair(0,0);
+}
+
+myType Precompute::getRraw()
+{
+    return r_raw;
+}
+
+myType Precompute::getZ_1()
+{
+    return z_1;
+}
+
+myType Precompute::getZ_3()
+{
+    return z_3;
+}
+
+void Precompute::getBlock1(std::unordered_map<myType, myType> &a)
+{
+    a = block_1;
+}
+
+void Precompute::getBitBList(std::unordered_map<myType, myType> &a)
+{
+    a = bit_b_list;
+}
+
+void Precompute::getBlockWithBit0(std::vector<std::unordered_map<myType, myType>> &a)
+{
+    a = blocks_with_bit_0;
+}
+
+
+void Precompute::getBlockWithBit1(std::vector<std::unordered_map<myType, myType>> &a)
+{
+    a = blocks_with_bit_1;
+}
+
+void Precompute::getCombinationTable(std::unordered_map<std::string, myType> &a)
+{
+    a = combination_table;
 }

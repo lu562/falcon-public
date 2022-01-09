@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <array>
-
+#include <unordered_map>
 
 /********************* Macros *********************/
 #define _aligned_malloc(size,alignment) aligned_alloc(alignment,size)
@@ -55,6 +55,8 @@
 typedef uint32_t myType;
 typedef uint8_t smallType;
 typedef std::pair<myType, myType> RSSMyType;
+typedef uint32_t ASSMyType;
+typedef std::vector<ASSMyType> ASSVectorMyType;
 typedef std::pair<smallType, smallType> RSSSmallType;
 typedef std::vector<RSSMyType> RSSVectorMyType;
 typedef std::vector<RSSSmallType> RSSVectorSmallType;

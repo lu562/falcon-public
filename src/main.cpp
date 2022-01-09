@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 	{network = argv[6]; dataset = argv[7]; security = argv[8];}
 	else
 	{
-		network = "SecureML";
+		network = "MiniONN";
 		dataset = "MNIST";
 		security = "Semi-honest";
 	}
@@ -47,6 +47,7 @@ int main(int argc, char** argv)
 
 	initializeCommunication(argv[2], partyNum);
 	synchronize(2000000);
+	PrecomputeObject.initialize();
 
 /****************************** RUN NETWORK/UNIT TESTS ******************************/ 
 	//Run these if you want a preloaded network to be tested

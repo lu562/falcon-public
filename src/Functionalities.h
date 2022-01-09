@@ -19,6 +19,8 @@ void funcGetShares(RSSVectorSmallType &a, const vector<smallType> &data);
 void funcReconstructBit(const RSSVectorSmallType &a, vector<smallType> &b, size_t size, string str, bool print);
 void funcReconstruct(const RSSVectorMyType &a, vector<myType> &b, size_t size, string str, bool print);
 void funcReconstruct(const RSSVectorSmallType &a, vector<smallType> &b, size_t size, string str, bool print);
+void funcASSReconstruct(const vector<myType> &a, vector<myType> &b, size_t size, string str, bool print);
+
 void funcReconstruct3out3(const vector<myType> &a, vector<myType> &b, size_t size, string str, bool print);
 void funcMatMul(const RSSVectorMyType &a, const RSSVectorMyType &b, RSSVectorMyType &c, 
 				size_t rows, size_t common_dim, size_t columns,
