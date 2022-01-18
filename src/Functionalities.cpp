@@ -1537,7 +1537,7 @@ void LTZ(const RSSVectorMyType &a, RSSVectorSmallType &b, size_t size)
         for (int i = 1; i < k; i++) {
             myType piece = (x_plus_r_plain[num] << (i * l)) >> ((k - 1) * l); 
             //if b == 0
-            if (bit[num] == 0) {
+            if (bit_plain[num] == 0) {
                 block_results[num * k + i] = (smallType) PrecomputeObject.blocks_with_bit_0[i - 1][piece];
             } else {
                 block_results[num * k + i] = (smallType) PrecomputeObject.blocks_with_bit_1[i - 1][piece];            
