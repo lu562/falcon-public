@@ -1590,22 +1590,22 @@ void funcRELUPrime(const RSSVectorMyType &a, RSSVectorSmallType &b, size_t size)
 	// 	cout << "LTZ result for value "<< data[i] << ":" << (int)b_plain[i] << endl;
 	// }
 
-	LTZ(a, b, size);
+// 	LTZ(a, b, size);
 
-// 	RSSVectorMyType twoA(size);
-// 	RSSVectorSmallType theta(size);
-// 	for (int i = 0; i < size; ++i)
-// 		twoA[i] = a[i] << 1;
+	RSSVectorMyType twoA(size);
+	RSSVectorSmallType theta(size);
+	for (int i = 0; i < size; ++i)
+		twoA[i] = a[i] << 1;
 
-// 	// cout << "Wrap: \t\t" << funcTime(funcWrap, twoA, theta, size) << endl;
-// 	funcWrap(twoA, theta, size);
+	// cout << "Wrap: \t\t" << funcTime(funcWrap, twoA, theta, size) << endl;
+	funcWrap(twoA, theta, size);
 
 
-// 	for (int i = 0; i < size; ++i)
-// 	{
-// 		b[i].first = theta[i].first ^ (getMSB(a[i].first));
-// 		b[i].second = theta[i].second ^ (getMSB(a[i].second));
-// 	}
+	for (int i = 0; i < size; ++i)
+	{
+		b[i].first = theta[i].first ^ (getMSB(a[i].first));
+		b[i].second = theta[i].second ^ (getMSB(a[i].second));
+	}
 }
 
 //Input is a, outputs are temp = ReLU'(a) and b = RELU(a).
