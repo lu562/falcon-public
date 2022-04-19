@@ -1,3 +1,10 @@
+### This is a modified version of falcon.
+If you direct build and run it, it runs falcon's secure comparison by default. To run our secure comparsion protocol, you can change the file src/Functionalities.cpp:
+(1) comment line 1595~1608
+(2) uncomment line 15593
+
+Then if you run "make terminal", it will run our secure comparison protocol.
+
 # Falcon: Honest-Majority Maliciously Secure Framework for Private Deep Learning
 
 A maliciously secure framework for efficient 3-party protocols tailored for neural networks. This work builds off [SecureNN](https://github.com/snwagh/securenn-public), [ABY3](https://github.com/ladnir/aby3) and other prior works.  This work is published in [Privacy Enhancing Technologies Symposium (PETS) 2021](https://petsymposium.org). Paper available [here](https://snwagh.github.io).
