@@ -20,14 +20,18 @@ private:
 public:
 	// offline vars for lTZ()
 	myType r_raw;
-	myType z_1;
-	myType z_3;
+	myType r_1;
+	myType r_2;
     std::unordered_map<myType, myType> block_1;
+    std::unordered_map<myType, myType> block_1_redundant;
     std::unordered_map<myType, myType> bit_b_list;
+    std::unordered_map<myType, myType> bit_b_list_redundant;
     std::vector<std::unordered_map<myType, myType>> blocks_with_bit_0;
     std::vector<std::unordered_map<myType, myType>> blocks_with_bit_1;	
+    std::vector<std::unordered_map<myType, myType>> blocks_with_bit_0_redundant;
+    std::vector<std::unordered_map<myType, myType>> blocks_with_bit_1_redundant;	
     std::unordered_map<std::string, myType> combination_table;
-
+    std::unordered_map<std::string, myType> combination_table_redundant;
 	Precompute();
 	~Precompute();
 

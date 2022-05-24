@@ -11,7 +11,6 @@ extern void end_time(string str);
 extern void end_communication(string str);
 
 
-
 void funcTruncate(RSSVectorMyType &a, size_t power, size_t size);
 void funcTruncatePublic(RSSVectorMyType &a, size_t divisor, size_t size);
 void funcGetShares(RSSVectorMyType &a, const vector<myType> &data);

@@ -70,7 +70,7 @@ std::vector<std::pair<std::string, std::vector<myType>>> read_csv(std::string fi
 }
 
 
-Precompute::Precompute():blocks_with_bit_0(k - 1), blocks_with_bit_1(k - 1)
+Precompute::Precompute():blocks_with_bit_0(k - 1), blocks_with_bit_1(k - 1),blocks_with_bit_0_redundant(k - 1), blocks_with_bit_1_redundant(k - 1)
 {
     //initialize();
 }
@@ -95,49 +95,55 @@ void Precompute::initialize(){
         config_file_name = "config_p2_001.csv";
         combination_file_name = "rectable_p2_001.csv";
     } else {
+        block_1_file_name = "block1_p3_001.csv";
+        tables_file_name = "tables_p3_001.csv";
         config_file_name = "config_p3_001.csv";
+        combination_file_name = "rectable_p3_001.csv";
     }
-    if (partyNum == PARTY_C) {
-        // offline party only need to store the result pairs.
-        std::vector<std::pair<std::string, std::vector<myType>>> config_csv = read_csv(config_file_name);
-        for (std::pair<std::string, std::vector<myType>> i: config_csv) {
-            if (i.first.compare("z_1") == 0) {
-                z_1 = i.second[0];
-            } else if (i.first.compare("z_3") == 0) {
-                z_3 = i.second[0];
-            }
-        }
-        return;
-    }
+    // if (partyNum == PARTY_C) {
+    //     // offline party only need to store the result pairs.
+    //     std::vector<std::pair<std::string, std::vector<myType>>> config_csv = read_csv(config_file_name);
+    //     for (std::pair<std::string, std::vector<myType>> i: config_csv) {
+    //         if (i.first.compare("z_1") == 0) {
+    //             z_1 = i.second[0];
+    //         } else if (i.first.compare("z_3") == 0) {
+    //             z_3 = i.second[0];
+    //         }
+    //     }
+    //     return;
+    // }
 
     // read config
     std::vector<std::pair<std::string, std::vector<myType>>> config_csv = read_csv(config_file_name);
     for (std::pair<std::string, std::vector<myType>> i: config_csv) {
-        if (i.first.compare("r") == 0) {
-            r_raw = i.second[0];
-        } else if (i.first.compare("z_1") == 0) {
-            z_1 = i.second[0];
-        } else if (i.first.compare("z_3") == 0) {
-            z_3 = i.second[0];
-        }
+        if (i.first.compare("r_1") == 0) {
+            r_1 = i.second[0];
+        } else if (i.first.compare("r_2") == 0) {
+            r_2 = i.second[0];
+        } 
     }
 
     // read the first block
     std::vector<std::pair<std::string, std::vector<myType>>> first_block_csv = read_csv(block_1_file_name);
     int block_size = first_block_csv[0].second.size();
     for (int i = 0; i < block_size; i++) {
-        block_1[first_block_csv[0].second[i]] = first_block_csv[2].second[i];
+        block_1[first_block_csv[0].second[i]] = first_block_csv[3].second[i];
+        block_1_redundant[first_block_csv[0].second[i]] = first_block_csv[4].second[i];
         bit_b_list[first_block_csv[0].second[i]] = first_block_csv[1].second[i];
+        bit_b_list[first_block_csv[0].second[i]] = first_block_csv[2].second[i];
     }
+    
     // read the following blocks
-
     std::vector<std::pair<std::string, std::vector<myType>>> tables_csv = read_csv(tables_file_name);
     int tables_size = tables_csv[0].second.size();
     for (int i = 0; i < tables_size; i++) {
         if (tables_csv[0].second[i] == 0) {
+
             blocks_with_bit_0[tables_csv[1].second[i] - 1][tables_csv[2].second[i]] = tables_csv[3].second[i];
+            blocks_with_bit_0_redundant[tables_csv[1].second[i] - 1][tables_csv[2].second[i]] = tables_csv[4].second[i];
         } else {
             blocks_with_bit_1[tables_csv[1].second[i] - 1][tables_csv[2].second[i]] = tables_csv[3].second[i];
+            blocks_with_bit_1_redundant[tables_csv[1].second[i] - 1][tables_csv[2].second[i]] = tables_csv[4].second[i];
         }
     }
 
@@ -151,6 +157,7 @@ void Precompute::initialize(){
             string_input = prefix_0 + string_input;
         }
         combination_table[string_input] = combination_csv[1].second[i];
+        combination_table_redundant[string_input] = combination_csv[2].second[i];
     }
 }
 
@@ -259,20 +266,7 @@ void Precompute::getTriplets(RSSVectorSmallType &a, RSSVectorSmallType &b, RSSVe
 		it = std::make_pair(0,0);
 }
 
-myType Precompute::getRraw()
-{
-    return r_raw;
-}
 
-myType Precompute::getZ_1()
-{
-    return z_1;
-}
-
-myType Precompute::getZ_3()
-{
-    return z_3;
-}
 
 void Precompute::getBlock1(std::unordered_map<myType, myType> &a)
 {

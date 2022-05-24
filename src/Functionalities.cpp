@@ -8,7 +8,7 @@
 using namespace std;
 extern Precompute PrecomputeObject;
 extern string SECURITY_TYPE;
-
+extern int offlineCnt;
 /******************************** Functionalities 2PC ********************************/
 // Share Truncation, truncate shares of a by power (in place) (power is logarithmic)
 void funcTruncate(RSSVectorMyType &a, size_t power, size_t size)
@@ -1492,83 +1492,66 @@ void LTZ(const RSSVectorMyType &a, RSSVectorSmallType &b, size_t size)
 {
 	const int k = 4, l = 8;
 	log_print("LTZ protocol using function table");
-	// P3 does not participate 
-	if (partyNum == PARTY_C) {
-		for (int i = 0; i < size; ++i)
-		{
-			b[i].first = PrecomputeObject.z_3;
-			b[i].second = PrecomputeObject.z_1;
-		}	
-		return;	
-	}
-	// if it is P1 or P2, reconstruct the additive secret sharing.
-	myType r = PrecomputeObject.r_raw;
-	vector<smallType> block_results(size * k), block_results_plain(size * k);
-	vector<myType> x_plus_r(size), x_plus_r_plain(size);
 
-	if (partyNum == PARTY_A) {
-		for (int i = 0; i < size; ++i) {
-			x_plus_r[i] = a[i].first + a[i].second + r;
-		}
-	} else {
-		for (int i = 0; i < size; ++i) {
-			x_plus_r[i] = a[i].second + r;
-		}
+	RSSMyType r = make_pair(PrecomputeObject.r_1, PrecomputeObject.r_2);
+	vector<RSSSmallType> block_results(size * k);
+	vector<smallType> block_results_plain(size * k);
+	vector<RSSMyType> x_plus_r(size);
+	vector<myType> x_plus_r_plain(size);
+
+	for (int i = 0; i < size; ++i) {
+		x_plus_r[i].first = a[i].first + r.first;
+		x_plus_r[i].second = a[i].second + r.second;
 	}
-	
-	funcASSReconstruct(x_plus_r, x_plus_r_plain, size, "First round", false);
+
+	funcReconstruct(x_plus_r, x_plus_r_plain, size, "First round", false);
 
 	// look up first block table and bit b table
-	vector<smallType> bit(size), bit_plain(size);
-
+	vector<RSSSmallType> bit(size);
+	vector<smallType> bit_plain(size);
 
 	for (int i = 0; i < size; ++i)
 	{
         myType first_piece = x_plus_r_plain[i] >> ((k - 1) * l);
         // cout << "party" << partyNum << " x+r: " << x_plus_r_plain[i] << " first piece " <<  first_piece << endl;
-        bit[i] = (smallType)PrecomputeObject.bit_b_list[first_piece];
-        block_results[i * k] = (smallType)PrecomputeObject.block_1[first_piece];
-        myType lol = 33;
+        bit[i].first = (smallType)PrecomputeObject.bit_b_list[first_piece];
+        bit[i].second = (smallType)PrecomputeObject.bit_b_list_redundant[first_piece];
+        block_results[i * k].first = (smallType)PrecomputeObject.block_1[first_piece];
+        block_results[i * k].second = (smallType)PrecomputeObject.block_1_redundant[first_piece];
+
 	}	
-	funcASSReconstruct(bit, bit_plain, size, "Second round", false);
+	funcReconstruct(bit, bit_plain, size, "Second round", false);
 
     // look up tables to get all the block results
     for(int num = 0; num < size; num++) {
         for (int i = 1; i < k; i++) {
             myType piece = (x_plus_r_plain[num] << (i * l)) >> ((k - 1) * l); 
             //if b == 0
-            if (bit[num] == 0) {
-                block_results[num * k + i] = (smallType) PrecomputeObject.blocks_with_bit_0[i - 1][piece];
+            if (bit_plain[num] == 0) {
+                block_results[num * k + i].first = (smallType) PrecomputeObject.blocks_with_bit_0[i - 1][piece];
+                block_results[num * k + i].second = (smallType) PrecomputeObject.blocks_with_bit_0_redundant[i - 1][piece];
             } else {
-                block_results[num * k + i] = (smallType) PrecomputeObject.blocks_with_bit_1[i - 1][piece];            
+                block_results[num * k + i].first = (smallType) PrecomputeObject.blocks_with_bit_1[i - 1][piece];            
+                block_results[num * k + i].second = (smallType) PrecomputeObject.blocks_with_bit_1_redundant[i - 1][piece]; 
             }
         }
     }
-    funcASSReconstruct(block_results, block_results_plain, size * k, "Third round", false);
+    funcReconstruct(block_results, block_results_plain, size * k, "Third round", false);
 
-    vector<smallType> z_2(size), z_2_plain(size);
+
     for (int num = 0; num < size; num++) {
         string combination_entry = std::to_string(block_results_plain[num * k]);
         for (int i = 1; i < k; i++) {       
             combination_entry = combination_entry + std::to_string(block_results_plain[num * k + i]);
         } 
-        z_2[num] = PrecomputeObject.combination_table[combination_entry];
+        b[num].first = PrecomputeObject.combination_table[combination_entry];
+        b[num].second = PrecomputeObject.combination_table_redundant[combination_entry];
     }
-
-    // additional round to reconstruct z_2
-    funcASSReconstruct(z_2, z_2_plain, size, "Fourth round", false);
-
-	if (partyNum == PARTY_A) {
-		for (int i = 0; i < size; ++i) {
-			b[i].first = PrecomputeObject.z_1;
-			b[i].second = z_2_plain[i];
-		}
-	} else {
-		for (int i = 0; i < size; ++i) {
-			b[i].first = (smallType)z_2_plain[i];
-			b[i].second = (smallType)PrecomputeObject.z_3;
-		}
-	}
+ //    vector<smallType> res(size);
+	// funcReconstructBit(b, res, size, "res", false);
+	// for (int i = 0; i < size; i++) {
+	// 	cout << "HERE:" << (int) res[i] << endl;		
+	// }
 
 }
 
@@ -1577,21 +1560,14 @@ void LTZ(const RSSVectorMyType &a, RSSVectorSmallType &b, size_t size)
 void funcRELUPrime(const RSSVectorMyType &a, RSSVectorSmallType &b, size_t size)
 {
 	log_print("funcRELUPrime");
-	// int test_size = 3;
-	// vector<myType> data = {1, 0, -1};
-	// RSSVectorMyType test(test_size);
-	// funcGetShares(test, data);
-	// LTZ(test, b, test_size);
-
-
-	// vector<smallType> b_plain(test_size);
-	// funcReconstructBit(b, b_plain, test_size, "HA", false);
-	// for (int i = 0; i < test_size; i++) {
-	// 	cout << "LTZ result for value "<< data[i] << ":" << (int)b_plain[i] << endl;
+	// size = 10;
+	// RSSVectorMyType aa(size);
+	// for (int i = 0; i < size; i ++) {
+	// 	aa[i] = make_pair(-i,-i);
 	// }
-
 	LTZ(a, b, size);
-
+	
+	// offlineCnt += (int) size;
 	// RSSVectorMyType twoA(size);
 	// RSSVectorSmallType theta(size);
 	// for (int i = 0; i < size; ++i)
