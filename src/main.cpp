@@ -10,6 +10,7 @@
 
 
 int partyNum;
+int offlineCnt = 0;
 AESObject* aes_indep;
 AESObject* aes_next;
 AESObject* aes_prev;
@@ -32,9 +33,9 @@ int main(int argc, char** argv)
 	{network = argv[6]; dataset = argv[7]; security = argv[8];}
 	else
 	{
-		network = "MiniONN";
+		network = "SecureML";
 		dataset = "MNIST";
-		security = "Semi-honest";
+		security = "Malicious";
 	}
 	selectNetwork(network, dataset, security, config);
 	config->checkNetwork();
@@ -53,8 +54,8 @@ int main(int argc, char** argv)
 	//Run these if you want a preloaded network to be tested
 	//assert(NUM_ITERATION == 1 and "check if readMiniBatch is false in test(net)")
 	//First argument {SecureML, Sarda, MiniONN, or LeNet}
-	// network += " preloaded"; PRELOADING = true;
-	// preload_network(PRELOADING, network, net);
+	network += " preloaded"; PRELOADING = true;
+	preload_network(PRELOADING, network, net);
 
 	start_m();
 	//Run unit tests in two modes: 
@@ -70,19 +71,20 @@ int main(int argc, char** argv)
 	// string what = "F";
 	// runOnly(net, l, what, network);
 
-	//Run training
-	network += " train";
-	train(net);
+	// Run training
+	// network += " train";
+	// train(net);
 
-	//Run inference (possibly with preloading a network)
-	// network += " test";
-	// test(PRELOADING, network, net);
+	// Run inference (possibly with preloading a network)
+	network += " test";
+	test(PRELOADING, network, net);
 
 	end_m(network);
 	cout << "----------------------------------------------" << endl;  	
 	cout << "Run details: " << NUM_OF_PARTIES << "PC (P" << partyNum 
 		 << "), " << NUM_ITERATIONS << " iterations, batch size " << MINI_BATCH_SIZE << endl 
 		 << "Running " << security << " " << network << " on " << dataset << " dataset" << endl;
+	cout << "offline needed:" << offlineCnt << endl;
 	cout << "----------------------------------------------" << endl << endl;  
 
 	printNetwork(net);

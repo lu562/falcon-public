@@ -274,7 +274,7 @@ void funcReconstruct(const RSSVectorSmallType &a, vector<smallType> &b, size_t s
 			a_prev_send[i] = a[i].second;
 			a_next_send[i] = a[i].first;
 			b[i] = a[i].first;
-			// b[i] = additionModPrime[b[i]][a[i].second];
+			b[i] = additionModPrime[b[i]][a[i].second];
 		}
 
 		thread *threads = new thread[4];
@@ -365,9 +365,11 @@ void funcReconstruct(const RSSVectorMyType &a, vector<myType> &b, size_t size, s
 		delete[] threads;
 
 		for (int i = 0; i < size; ++i)
-		{
+		{	
+			// std::cout << "a_next: " << (uint32_t)a_next_recv[i] << " a_previous: " << (uint32_t)a_prev_recv[i] << std::endl;
 			if (a_next_recv[i] != a_prev_recv[i])
 			{
+
 				// error("Malicious behaviour detected");
 			}
 			b[i] = b[i] + a_prev_recv[i];
