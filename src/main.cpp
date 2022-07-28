@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 	{
 		network = "MiniONN";
 		dataset = "MNIST";
-		security = "Semi-honest";
+		security = "Malicious";
 	}
 	selectNetwork(network, dataset, security, config);
 	config->checkNetwork();
