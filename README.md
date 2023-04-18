@@ -1,7 +1,9 @@
+### This repo contains implementation of the paper "SIM: Secure Interval Membership Testing and Applications to Secure Comparison" (Euro S&P 2023).
+
 ### This is a modified version of falcon.
 If you direct build and run it, it runs falcon's secure comparison by default. To run our secure comparsion protocol, you can change the file src/Functionalities.cpp:
 (1) comment line 1595~1608
-(2) uncomment line 15593
+(2) uncomment line 1593
 
 Then if you run "make terminal", it will run our secure comparison protocol.
 
